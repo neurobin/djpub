@@ -39,5 +39,5 @@ setup(name="djpub",
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
       ],
-      install_requires=["django>=2.2.1",],
+      install_requires=["django==2.2.1",],
   )
