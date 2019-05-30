@@ -5,7 +5,7 @@ from django.http import HttpResponse
 class HomeView(View):
 
     def get(self, request):
-        return HttpResponse(f'This is home ')
+        return HttpResponse(f'This is home')
 
 class PostView(View):
 
