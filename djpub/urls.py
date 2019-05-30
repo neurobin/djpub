@@ -15,13 +15,13 @@ import glob
 import logging
 from django.urls import path
 from django.utils.module_loading import import_string
+from django.conf import settings as S
 
 
 logging.basicConfig(
-    level = logging.DEBUG,
+    level = logging.DEBUG if S.DEBUG else logging.INFO,
     format = '%(levelname)s:%(name)s: %(message)s',
 )
-# Get an instance of a logger
 logger = logging.getLogger(__name__)
 
 
