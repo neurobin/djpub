@@ -17,9 +17,4 @@ from django.utils.module_loading import import_string
 class BaseView(View):
     """Base view to be inherited by other views
     """
-
-    def get(self, request):
-        pass
-    
-    def post(self, request):
-        pass
+    pass
