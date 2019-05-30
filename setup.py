@@ -3,7 +3,7 @@
 import os
 import sys
 from codecs import open
-from setuptools import setup
+from setuptools import find_packages, setup
 
 sys.path[0:0] = ['djpub']
 
@@ -26,7 +26,7 @@ setup(name="djpub",
       license="BSD",
       keywords="django cms content management system",
       url="https://github.com/neurobin/djpub",
-      packages=["djpub"],
+      packages=find_packages(),
       long_description=get_readme("README.md"),
       long_description_content_type="text/markdown",
       classifiers=[

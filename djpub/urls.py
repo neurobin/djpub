@@ -13,6 +13,7 @@ License: [BSD](http://www.opensource.org/licenses/bsd-license.php)
 import os
 import glob
 import logging
+import pkgutil
 from django.urls import path
 from django.utils.module_loading import import_string
 from django.conf import settings as S
@@ -25,7 +26,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-DJPUB_VIEW_DIR_NAME = 'djpub_view'
+DJPUB_URL_CONF_NAME = 'djpub_urls'
 
 
 class UrlPatterns(object):
@@ -105,30 +106,56 @@ class UrlPatterns(object):
         return current_djpub_view_dotted_path if current_djpub_view_dotted_path else '[current_djpub_view_dotted_path]'
 
 
+def get_dotted_path(full_path, root_path):
+    return full_path.replace(root_path, '').strip(os.path.sep).replace(os.path.sep, '.')
 
-def get_urlpatterns(djpub_view_search_paths, project_root_dir):
-    """Search all djpub views and return a urlpattern list
+
+def get_urlpatterns(paths, root_path, exclude=None):
+    """Search all packages in paths and return a list of urlpatterns from djpub urlconf modules
+    
+    Your package directory must contain a __init__.py for us to find subsequent packages/modules.
     
     Args:
-        djpub_view_search_paths (list): A list of paths where we will search for DJPUB views.
-        project_root_dir (str): The django project root directory from where import starts, e.g project.app means we need the parent of project package.
+        paths (list):               list of search path, any iterable will do.
+        root_path (str):            Your project root directory path relative to which modules are imported.
+        exclude (list, optional):   A list of package names that will be excluded from search.
+                                    Must either pass a list or None. None will use internally defined
+                                    exclude packages. Defaults to None.
+    
+    Returns:
+        list: List of django URLPatterns
     """
-    logger.debug(f"Starting search for djpub_views in {str(djpub_view_search_paths)}")
+
+    if exclude is None:
+        exclude = ['migrations', 'models',]
+
     urlpatterns = []
-    for path in djpub_view_search_paths:
-        logger.debug(f"Searching for djpub_view in {path}")
-        for parent, folders, files in os.walk(path):
-            for folder in folders:
-                if folder == DJPUB_VIEW_DIR_NAME:
-                    folder = os.path.join(parent, folder)
-                    logger.debug(f"djpub view dir: {folder}")
-                    view_package_path = folder.replace(project_root_dir, '').strip(os.path.sep).replace(os.path.sep, '.')
-                    logger.debug(f"view_package_path: {view_package_path}")
-                    _URLPatterns_Class = import_string(f"{view_package_path}.{UrlPatterns.__name__}")
-                    _URLPatterns = _URLPatterns_Class(current_djpub_view_dotted_path=view_package_path)
+
+    def _iterpacks(packs, root_path, urlpatterns):
+        for loader, name, is_pkg in pkgutil.walk_packages(packs):
+            # logger.debug(f"Path: {loader.path} Name: {name} IsPkg: {is_pkg}")
+            if is_pkg:
+                if name in exclude:
+                    logger.debug(f"Package {name} is excluded from search..")
+                else:
+                    _iterpacks([os.path.join(loader.path, name)], root_path, urlpatterns)
+            else:
+                if name == DJPUB_URL_CONF_NAME:
+                    # logger.debug(f"SEARCH: module {name} matches {DJPUB_URL_CONF_NAME}")
+                    full_path = os.path.join(loader.path, name)
+                    logger.debug(f"Full path: {full_path}")
+                    full_dotted_path = get_dotted_path(full_path, root_path)
+                    logger.debug(f"Dotted path: {full_dotted_path}")
+                    _URLPatterns_Class = import_string(f"{full_dotted_path}.{UrlPatterns.__name__}")
+                    _URLPatterns = _URLPatterns_Class(current_djpub_view_dotted_path=full_dotted_path)
                     _urlpatterns = _URLPatterns._get_urlpatterns()
                     logger.debug(f"UrlPatterns.get_urlpatterns(): {str(_urlpatterns)}")
                     _position = _URLPatterns._get_desired_position_index()
                     urlpatterns[_position:_position] = _urlpatterns
+                else:
+                    # logger.debug(f"SEARCH: module {name} does not match {DJPUB_URL_CONF_NAME}")
+                    pass
+    
+    _iterpacks(paths, root_path, urlpatterns)
     logger.debug(f"urlpatterns: {str(urlpatterns)}")
     return urlpatterns

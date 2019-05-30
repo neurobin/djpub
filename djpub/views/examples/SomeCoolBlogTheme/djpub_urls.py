@@ -1,7 +1,7 @@
 
 from django.urls import path
 import djpub
-from .common_views import HomeView, PostView
+from .views import HomeView, PostView
 
 class UrlPatterns(djpub.urls.UrlPatterns):
     """A class named UrlPatterns must be avaiable directly under djpub_view
