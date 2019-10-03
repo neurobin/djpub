@@ -31,7 +31,7 @@ setup(name="djpub",
       long_description_content_type="text/markdown",
       classifiers=[
         # See: https://pypi.python.org/pypi?:action=list_classifiers
-        'Development Status :: 1 - Planning',
+        'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',
         'Intended Audience :: Information Technology',
         'License :: OSI Approved :: BSD License',

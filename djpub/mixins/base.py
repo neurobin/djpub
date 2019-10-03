@@ -1,9 +1,21 @@
 
 import os
-from django.conf import settings as django_user_settings
+from django.conf import settings as S
 from django.templatetags.static import static
 from django.urls import reverse
+from django.shortcuts import render
+from django.template.loader import render_to_string
+from django.http import HttpResponse
 from .. import utils
+
+import logging
+
+
+logging.basicConfig(
+    level = logging.DEBUG if S.DEBUG else logging.INFO,
+    format = '%(levelname)s:%(name)s: %(message)s',
+)
+logger = logging.getLogger(__name__)
 
 class Mixin(object):
     """Base mixin class offered by djpub
@@ -13,6 +25,7 @@ class Mixin(object):
     The following attributes must be overriden:
         * djpub_install_prefix
     """
+    
     _djpub_active_theme_dir_name = 'active'
     djpub_install_prefix = None     # Must override
 
@@ -86,4 +99,44 @@ class Mixin(object):
             ctx (dict): existing context
         """
         ctx.update(self.djpub_get_new_context())
+    
+    def djpub_render(self, request, template, ctx):
+        """Render and return response handling djpub theme paths
+        
+        Args:
+            request (HttpRequest): the request object
+            template (str or list): one template or multiple templates
+            ctx (dict): the context
+        
+        Returns:
+            [type]: [description]
+        """
+        if isinstance(template, str):
+            return render(request, self.djpub_template(template), ctx)
+        else:
+            return render(request, self.djpub_templates(template), ctx)
+
+    def djpub_save_and_render(self, request, template, ctx, html_file):
+        """Render and return response handling djpub theme paths
+        
+        Args:
+            request (HttpRequest): the request object
+            template (str or list): one template or multiple templates
+            ctx (dict): the context
+        
+        Returns:
+            [HttpResponse]: response
+        """
+        if isinstance(template, str):
+            html = render_to_string(self.djpub_template(template), context=ctx, request=request)
+        else:
+            html = render_to_string(self.djpub_templates(template), context=ctx, request=request)
+        try:
+            with open(html_file, 'w', encoding='utf-8') as f:
+                f.write(html)
+        except:
+            logger.exception("Failed to write file: " + html_file)
+        return HttpResponse(html, content_type="text/html")
+
+
 
